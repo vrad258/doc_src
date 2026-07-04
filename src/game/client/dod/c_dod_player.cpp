@@ -245,6 +245,9 @@ IMPLEMENT_CLIENTCLASS_DT( C_DODPlayer, DT_DODPlayer, CDODPlayer )
 	RecvPropEHandle( RECVINFO( m_hRagdoll ) ),
 	RecvPropBool( RECVINFO( m_bSpawnInterpCounter ) ),
 	RecvPropInt( RECVINFO( m_iAchievementAwardsMask ) ),
+	RecvPropInt( RECVINFO( m_iAccount ) ),
+	RecvPropInt( RECVINFO( m_bInBombZone ) ),
+	RecvPropInt( RECVINFO( m_bInBuyZone ) ),
 
 END_RECV_TABLE()
 

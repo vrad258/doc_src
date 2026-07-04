@@ -65,7 +65,9 @@ BEGIN_DATADESC(CSpawnPoint)
 END_DATADESC();
 
 LINK_ENTITY_TO_CLASS(info_player_allies, CSpawnPoint);
+LINK_ENTITY_TO_CLASS(info_player_counterterrorist, CSpawnPoint);
 LINK_ENTITY_TO_CLASS(info_player_axis, CSpawnPoint);
+LINK_ENTITY_TO_CLASS(info_player_terrorist, CSpawnPoint);
 
 #endif
 
@@ -359,6 +361,8 @@ static CDODViewVectors g_DODViewVectors(
 		"info_node_hint",
 		"info_player_allies",
 		"info_player_axis",
+		"info_player_counterterrorist",
+		"info_player_terrorist",
 		"point_viewcontrol",
 		"shadow_control",
 		"sky_camera",
@@ -544,6 +548,12 @@ static CDODViewVectors g_DODViewVectors(
 		{
 			m_bWinterHolidayActive = false;
 		}
+
+		// CSS bomb shite
+		m_bMapHasBombZone = false;
+		m_bBombDropped = false;
+		m_bBombPlanted = false;
+		m_pLastBombGuy = NULL;
 	}
 
 	//-----------------------------------------------------------------------------
@@ -1231,6 +1241,21 @@ static CDODViewVectors g_DODViewVectors(
 
 	ConVar r_visualizeExplosion( "r_visualizeExplosion", "0", FCVAR_CHEAT );
 
+	void CDODGameRules::RadiusDamage(
+    const CTakeDamageInfo &info,
+    const Vector &vecSrcIn,
+    float flRadius,
+    int iClassIgnore,
+    bool bIgnoreWorld )
+{
+    RadiusDamage(
+        info,
+        vecSrcIn,
+        flRadius,
+        iClassIgnore,
+        (CBaseEntity *)NULL,
+        bIgnoreWorld );
+}
 	void CDODGameRules::RadiusDamage( const CTakeDamageInfo &info, const Vector &vecSrcIn, float flRadius, int iClassIgnore, CBaseEntity *pEntityIgnore, bool bIgnoreWorld /* = false */ )
 	{
 		CBaseEntity *pEntity = NULL;
@@ -1766,6 +1791,8 @@ static CDODViewVectors g_DODViewVectors(
 	{
 		TestSpawnPointType( "info_player_allies" );
 		TestSpawnPointType( "info_player_axis" );
+		TestSpawnPointType( "info_player_terrorist" );
+		TestSpawnPointType( "info_player_counterterrorist" );
 	}
 	ConCommand cc_TestSpawns( "map_showspawnpoints", TestSpawns, "Dev - test the spawn points, draws for 60 seconds", FCVAR_CHEAT );
 
@@ -2596,6 +2623,9 @@ const CDODViewVectors *CDODGameRules::GetDODViewVectors() const
 		m_flNextPeriodicThink = gpGlobals->curtime + 0.1;
 
 		Load_EntText();
+
+		m_bBombDropped = false;
+		m_bBombPlanted = false;
 	}
 
 	void CDODGameRules::State_Think_PREGAME( void )
@@ -3090,6 +3120,9 @@ const CDODViewVectors *CDODGameRules::GetDODViewVectors() const
 		ResetMapTime();
 
 		State_Transition( STATE_PREROUND );
+
+		m_bBombDropped = false;
+		m_bBombPlanted = false;
 	}
 
 	void CDODGameRules::SendTeamScoresEvent( void )
@@ -3930,43 +3963,76 @@ const CDODViewVectors *CDODGameRules::GetDODViewVectors() const
 	{
 		if (!m_bLevelInitialized)
 		{
-			// Count the number of spawn points for each team
-			// This determines the maximum number of players allowed on each
-
-			CBaseEntity* ent = NULL;
+			CBaseEntity *ent = NULL;
 
 			m_iSpawnPointCount_Allies = 0;
 			m_iSpawnPointCount_Axis = 0;
 
+			ent = NULL;
 			while ((ent = gEntList.FindEntityByClassname(ent, "info_player_allies")) != NULL)
 			{
 				if (IsSpawnPointValid(ent, NULL))
 				{
 					m_iSpawnPointCount_Allies++;
-
-					// store in a list
 					m_AlliesSpawnPoints.AddToTail(ent);
 				}
 				else
 				{
-					Warning("Invalid allies spawnpoint at (%.1f,%.1f,%.1f)\n",
-						ent->GetAbsOrigin()[0], ent->GetAbsOrigin()[2], ent->GetAbsOrigin()[2]);
+					Warning("Invalid allies spawnpoint at (%.1f, %.1f, %.1f)\n",
+						ent->GetAbsOrigin().x,
+						ent->GetAbsOrigin().y,
+						ent->GetAbsOrigin().z);
 				}
 			}
 
+			ent = NULL;
+			while ((ent = gEntList.FindEntityByClassname(ent, "info_player_counterterrorist")) != NULL)
+			{
+				if (IsSpawnPointValid(ent, NULL))
+				{
+					m_iSpawnPointCount_Allies++;
+					m_AlliesSpawnPoints.AddToTail(ent);
+				}
+				else
+				{
+					Warning("Invalid CT spawnpoint at (%.1f, %.1f, %.1f)\n",
+						ent->GetAbsOrigin().x,
+						ent->GetAbsOrigin().y,
+						ent->GetAbsOrigin().z);
+				}
+			}
+
+			ent = NULL;
 			while ((ent = gEntList.FindEntityByClassname(ent, "info_player_axis")) != NULL)
 			{
 				if (IsSpawnPointValid(ent, NULL))
 				{
 					m_iSpawnPointCount_Axis++;
-
-					// store in a list
 					m_AxisSpawnPoints.AddToTail(ent);
 				}
 				else
 				{
-					Warning("Invalid axis spawnpoint at (%.1f,%.1f,%.1f)\n",
-						ent->GetAbsOrigin()[0], ent->GetAbsOrigin()[2], ent->GetAbsOrigin()[2]);
+					Warning("Invalid axis spawnpoint at (%.1f, %.1f, %.1f)\n",
+						ent->GetAbsOrigin().x,
+						ent->GetAbsOrigin().y,
+						ent->GetAbsOrigin().z);
+				}
+			}
+
+			ent = NULL;
+			while ((ent = gEntList.FindEntityByClassname(ent, "info_player_terrorist")) != NULL)
+			{
+				if (IsSpawnPointValid(ent, NULL))
+				{
+					m_iSpawnPointCount_Axis++;
+					m_AxisSpawnPoints.AddToTail(ent);
+				}
+				else
+				{
+					Warning("Invalid terrorist spawnpoint at (%.1f, %.1f, %.1f)\n",
+						ent->GetAbsOrigin().x,
+						ent->GetAbsOrigin().y,
+						ent->GetAbsOrigin().z);
 				}
 			}
 
@@ -5952,3 +6018,73 @@ void CFuncTeamWall::DrawThink( void )
 
 #endif 
 
+#ifdef GAME_DLL
+	// CSS MAPINFO
+LINK_ENTITY_TO_CLASS( info_map_parameters, CMapInfo );
+
+BEGIN_DATADESC( CMapInfo )
+
+	DEFINE_INPUTFUNC( FIELD_INTEGER, "FireWinCondition", InputFireWinCondition ),
+
+END_DATADESC()
+
+CMapInfo *g_pMapInfo = NULL;
+
+
+CMapInfo::CMapInfo()
+{
+	m_flBombRadius = 500.0f;
+	m_iBuyingStatus = 0;
+
+	if ( g_pMapInfo )
+	{
+		// Should only be one of these.
+		Warning( "Warning: Multiple info_map_parameters entities in map!\n" );
+	}
+	else
+	{
+		g_pMapInfo = this;
+	}
+}
+
+
+CMapInfo::~CMapInfo()
+{
+	if ( g_pMapInfo == this )
+		g_pMapInfo = NULL;
+}
+ 
+
+bool CMapInfo::KeyValue( const char *szKeyName, const char *szValue )
+{
+	if (FStrEq(szKeyName, "buying"))
+	{
+		m_iBuyingStatus = atoi(szValue);
+		return true;
+	}
+	else if (FStrEq(szKeyName, "bombradius"))
+	{
+		m_flBombRadius = (float)(atoi(szValue));
+		if (m_flBombRadius > 2048)
+			m_flBombRadius = 2048;
+		
+		return true;
+	}
+	
+	return BaseClass::KeyValue( szKeyName, szValue );
+}
+
+
+void CMapInfo::Spawn( void )
+{ 
+	SetMoveType( MOVETYPE_NONE );
+	SetSolid( SOLID_NONE );
+	AddEffects( EF_NODRAW );
+}
+
+void CMapInfo::InputFireWinCondition(inputdata_t &inputdata )
+{
+	// TODO MAKE THIS WORK - Vvis :3 
+	//DODGameRules()->TerminateRound( 5, inputdata.value.Int() );
+}
+#endif

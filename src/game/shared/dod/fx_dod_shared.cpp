@@ -62,6 +62,30 @@ void TE_DODExplosion( IRecipientFilter &filter, float flDelay, const Vector &vec
 	// Send it over the wire
 	g_TEDODExplosion.Create( filter, flDelay );
 }
+// This runs on both the client and the server.
+// On the server, it dispatches a TE_PlantBomb to visible clients.
+// On the client, it plays the planting animation.
+void FX_PlantBomb( int iPlayerIndex, const Vector &vOrigin )
+{
+#ifdef CLIENT_DLL
+	C_DODPlayer *pPlayer = ToDODPlayer( ClientEntityList().GetBaseEntity( iPlayerIndex ) );
+#else
+	CDODPlayer *pPlayer = ToDODPlayer( UTIL_PlayerByIndex( iPlayerIndex) );
+#endif
+
+	// Do the firing animation event.
+	if ( pPlayer && !pPlayer->IsDormant() )
+	{
+		//pPlayer->GetPlayerAnimState()->DoAnimationEvent( PLAYERANIMEVENT_FIRE_GUN_PRIMARY );
+	}
+
+#ifndef CLIENT_DLL
+	// if this is server code, send the effect over to client as temp entity
+	// Dispatch one message for all the bullet impacts and sounds.
+	//TE_PlantBomb( iPlayerIndex, vOrigin );
+#endif
+}
+
 
 #endif
 

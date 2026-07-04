@@ -116,6 +116,16 @@ public:
 	void CheckBombTargetPlantHint( void );
 	void CheckBombTargetDefuseHint( void );
 
+
+	int m_iShouldHaveCash;
+	// Add money to this player's account.
+	void AddAccount(int amount, bool bTrackChange = true);
+	int		m_iAccount;
+	CNetworkVar(bool, m_bIsDefusing);			// tracks whether this player is currently defusing a bomb
+	CNetworkVar(bool, m_bInBombZone);
+	CNetworkVar(bool, m_bInBuyZone);
+	CNetworkVar(int, m_iThrowGrenadeCounter);	// used to trigger grenade throw animations.
+
 	virtual void ComputeWorldSpaceSurroundingBox( Vector *pVecWorldMins, Vector *pVecWorldMaxs );
 	
 	// Hints

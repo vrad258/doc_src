@@ -1250,6 +1250,13 @@ void CHLClient::PostInit()
 		r_lightmap_bicubic_set.SetValue( true );
 	}
 
+	ConVar* pCVSets = g_pCVar->FindVar("sv_pure");
+	if (pCVSets)
+	{
+		pCVSets->SetDefault("-1");
+		pCVSets->SetValue("-1");
+	}
+
 	SwapDisconnectCommand();
 }
 

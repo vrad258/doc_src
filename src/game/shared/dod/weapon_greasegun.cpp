@@ -101,7 +101,7 @@ public:
 	virtual void WeaponIdle();
 
 	virtual DODWeaponID GetWeaponID(void) const { return WEAPON_TRENCHGUN; }
-
+	virtual DODWeaponID GetAltWeaponID(void) const { return WEAPON_GREASEGUN_PUNCH; }
 
 private:
 

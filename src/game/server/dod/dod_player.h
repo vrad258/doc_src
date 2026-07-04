@@ -227,6 +227,16 @@ public:
 	bool DODWeaponDrop( CBaseCombatWeapon *pWeapon, bool bThrowForward );
 	bool BumpWeapon( CBaseCombatWeapon *pBaseWeapon );
 
+	// Set to true each frame while in a bomb zone.
+	// Reset after prediction (in PostThink).
+	CNetworkVar(bool, m_bInBombZone);
+	CNetworkVar(bool, m_bInBuyZone);
+	int m_iBombSiteIndex;
+	CNetworkVar(int, m_iAccount);	// How much cash this player has.
+	bool IsInBuyZone();
+	bool CanPlayerBuy(bool display);
+	int m_iNextTimeCheck;		// Next time the player can execute a "timeleft" command
+
 	CWeaponDODBase* GetActiveDODWeapon() const;
 
 	virtual void AttemptToExitFreezeCam( void );
@@ -326,6 +336,7 @@ public:
 	void StatEvent_ScoredRevenge( void );
 	void StatEvent_WeaponFired( DODWeaponID iWeaponID );
 	void StatEvent_WeaponHit( DODWeaponID iWeaponID, bool bWasHeadshot );
+	bool HasC4() const;
 #ifdef SecobMod__SAVERESTORE
 	virtual void SaveTransitionFile(void);
 #endif //SecobMod__SAVERES
@@ -433,7 +444,7 @@ public:
 #if !defined(NO_STEAM)
 	STEAM_GAMESERVER_CALLBACK( CDODPlayer, OnGSStatsReceived, GSStatsReceived_t, m_CallbackGSStatsReceived );
 #endif
-
+	void ResetMaxSpeed();
 private:
 	bool SelectSpawnSpot( const char *pEntClassName, CBaseEntity* &pSpot );
 

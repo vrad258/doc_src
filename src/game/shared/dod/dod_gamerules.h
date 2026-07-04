@@ -253,6 +253,14 @@ public:
 
 	virtual bool IsConnectedUserInfoChangeAllowed( CBasePlayer *pPlayer );
 
+	// BOMB MAP VARIABLES
+	bool	m_bTargetBombed;	// whether or not the bomb has been bombed
+	bool	m_bBombDefused;	// whether or not the bomb has been defused
+	bool	m_bMapHasBombZone;
+	bool	m_bBombDropped;
+	bool	m_bBombPlanted;
+	EHANDLE m_pLastBombGuy;
+
 #ifndef CLIENT_DLL
 	float GetPresentDropChance( void );	// holiday 2011, presents instead of ammo boxes
 #endif
@@ -473,8 +481,9 @@ protected:
 private:
 	bool CheckTimeLimit( void );
 	bool CheckWinLimit( void );
-
+public:
 	void RadiusDamage( const CTakeDamageInfo &info, const Vector &vecSrcIn, float flRadius, int iClassIgnore, bool bIgnoreWorld );
+private:
 	float GetExplosionDamageAdjustment(Vector & vecSrc, Vector & vecEnd, CBaseEntity *pTarget, CBaseEntity *pEntityToIgnore); // returns multiplier between 0.0 and 1.0 that is the percentage of any damage done from vecSrc to vecEnd that actually makes it.
 	float GetAmountOfEntityVisible(Vector & src, CBaseEntity *pTarget, CBaseEntity *pEntityToIgnore); // returns a value from 0 to 1 that is the percentage of player visible from src.
 
@@ -608,6 +617,27 @@ inline CDODGameRules* DODGameRules()
 #else	
 	bool EntityPlacementTest( CBaseEntity *pMainEnt, const Vector &vOrigin, Vector &outPos, bool bDropToGround );
 #endif //CLIENT_DLL
+#ifdef GAME_DLL
+	class CMapInfo : public CPointEntity
+	{
+	public:
 
-	 
+		DECLARE_DATADESC();
+		DECLARE_CLASS(CMapInfo, CPointEntity);
+
+		CMapInfo();
+		virtual ~CMapInfo();
+
+		bool KeyValue(const char* szKeyName, const char* szValue);
+		void Spawn();
+
+		void InputFireWinCondition(inputdata_t& inputdata);
+
+	public:
+		int m_iBuyingStatus;
+		float m_flBombRadius;
+	};
+	// The info_map_parameters entity in this map (only one is allowed for).
+	extern CMapInfo* g_pMapInfo;
+#endif
 #endif // DOD_GAMERULES_H

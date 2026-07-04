@@ -27,7 +27,7 @@ class CDODPlayerMove : public CPlayerMove
 DECLARE_CLASS( CDODPlayerMove, CPlayerMove );
 
 public:
-	//virtual void	StartCommand( CBasePlayer *player, CUserCmd *cmd );
+	virtual void	StartCommand( CBasePlayer *player, CUserCmd *cmd );
 	virtual void	SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *pHelper, CMoveData *move );
 	virtual void	FinishMove( CBasePlayer *player, CUserCmd *ucmd, CMoveData *move );
 };
@@ -47,12 +47,18 @@ CPlayerMove *PlayerMove()
 // Main setup, finish
 //-----------------------------------------------------------------------------
 
-/*
+
 void CDODPlayerMove::StartCommand( CBasePlayer *player, CUserCmd *cmd )
 {
+	CDODPlayer* pPlayer = ToDODPlayer(player);
+
+	// Reset this.. it gets reset each frame that we're in a bomb zone.
+	pPlayer->m_bInBombZone = false;
+	pPlayer->m_bInBuyZone = false;
+	//pPlayer->m_bInHostageRescueZone = false;
 	BaseClass::StartCommand( player, cmd );
 }
-*/
+
 
 //-----------------------------------------------------------------------------
 // Purpose: This is called pre player movement and copies all the data necessary

@@ -40,5 +40,10 @@ void FX_FireBullets(
 
 #endif
 
+	// This runs on both the client and the server.
+	// On the server, it dispatches a TE_PlantBomb to visible clients.
+	// On the client, it plays the planting animation.
+	void FX_PlantBomb(int iPlayer, const Vector& vOrigin);
+
 
 #endif // FX_DOD_SHARED_H

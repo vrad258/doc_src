@@ -267,6 +267,9 @@ IMPLEMENT_SERVERCLASS_ST( CDODPlayer, DT_DODPlayer )
 	SendPropEHandle( SENDINFO( m_hRagdoll ) ),
 	SendPropBool( SENDINFO( m_bSpawnInterpCounter ) ),
 	SendPropInt( SENDINFO( m_iAchievementAwardsMask ), NUM_ACHIEVEMENT_AWARDS, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_iAccount ), 16, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_bInBombZone ), 1, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_bInBuyZone ), 1, SPROP_UNSIGNED ),
 END_SEND_TABLE()
 
 BEGIN_DATADESC( CDODPlayer )
@@ -357,8 +360,77 @@ CDODPlayer::CDODPlayer()
 	m_hLastDroppedAmmoBox = NULL;
 
 	m_flTimeAsClassAccumulator = 0;
+
+	// CSS stuff 
+
+	m_iNextTimeCheck = 0;
+	m_bInBombZone = false;
+	m_bInBuyZone = false;
+	m_iAccount = 0;
 }
 
+//------------------------------------------------------------------------------------------
+CON_COMMAND( timeleft, "prints the time remaining in the match" )
+{
+	CDODPlayer *pPlayer = ToDODPlayer( UTIL_GetCommandClient() );
+	if ( pPlayer && pPlayer->m_iNextTimeCheck >= gpGlobals->curtime )
+	{
+		return; // rate limiting
+	}
+
+	// TODO DOD:CSS FIX THIS!!! - Vvis :3 
+
+	/*int iTimeRemaining = (int)DODGameRules()->GetMapRemainingTime();
+
+	if ( iTimeRemaining < 0 )
+	{
+		if ( pPlayer )
+		{
+			ClientPrint( pPlayer, HUD_PRINTTALK, "#Game_no_timelimit" );
+		}
+		else
+		{
+			Msg( "* No Time Limit *\n" );
+		}
+	}
+	else if ( iTimeRemaining == 0 )
+	{
+		if ( pPlayer )
+		{
+			ClientPrint( pPlayer, HUD_PRINTTALK, "#Game_last_round" );
+		}
+		else
+		{
+			Msg( "* Last Round *\n" );
+		}
+	}
+	else
+	{
+		int iMinutes, iSeconds;
+		iMinutes = iTimeRemaining / 60;
+		iSeconds = iTimeRemaining % 60;
+
+		char minutes[8];
+		char seconds[8];
+
+		Q_snprintf( minutes, sizeof(minutes), "%d", iMinutes );
+		Q_snprintf( seconds, sizeof(seconds), "%2.2d", iSeconds );
+
+		if ( pPlayer )
+		{
+			ClientPrint( pPlayer, HUD_PRINTTALK, "#Game_timelimit", minutes, seconds );
+		}
+		else
+		{
+			Msg( "Time Remaining:  %s:%s\n", minutes, seconds );
+		}
+	}*/
+
+	if ( pPlayer )
+	{
+		pPlayer->m_iNextTimeCheck = gpGlobals->curtime + 1;
+	}
+}
 
 CDODPlayer::~CDODPlayer()
 {
@@ -565,6 +637,33 @@ void CDODPlayer::Spawn()
 	}
 
 	m_StatProperty.SetClassAndTeamForThisLife( m_Shared.PlayerClass(), GetTeamNumber() );
+}
+
+//=========================================================
+// ResetMaxSpeed
+//
+// Reset this player's max speed via the active item
+//=========================================================
+void CDODPlayer::ResetMaxSpeed()
+{
+	float speed;
+
+	CWeaponDODBase *pWeapon = GetActiveDODWeapon();
+	if ( pWeapon )
+	{
+		//if ( HasShield() && IsShieldDrawn() )
+		//{
+		//	speed = 160;
+		//}
+		//else
+		//	speed = pWeapon->GetMaxSpeed(); // Get player speed from selected weapon
+	}
+	else
+	{
+		// No active item, set the player's speed to default
+		speed = 600;
+	}
+	SetMaxSpeed( speed );
 }
 
 void CDODPlayer::PlayerDeathThink()
@@ -4931,4 +5030,10 @@ void CDODPlayerStatProperty::SendStatsToPlayer( CDODPlayer *pPlayer )
 	MessageEnd();
 
 	ResetPerLifeStats();
+}
+
+
+bool CDODPlayer::HasC4() const
+{
+	return (Weapon_OwnsThisType("weapon_c4") != NULL);
 }
